@@ -3,776 +3,533 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KeuanganKu - Integrated with Google Sheets</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Pengelola Keuangan Bulanan</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+<body class="text-slate-800">
 
-    <!-- Top Header Bar -->
+    <!-- Header / Navbar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-emerald-500 text-white p-2.5 rounded-xl shadow-md shadow-emerald-200">
-                    <i class="fa-solid fa-sheet-plastic text-xl"></i>
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-600 text-white p-2 rounded-xl">
+                    <i data-lucide="wallet" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight text-slate-800">KeuanganKu <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full ml-1 font-semibold">Sheets Sync</span></h1>
-                    <p class="text-xs text-slate-500">Database Backend: Google Sheets API</p>
+                    <h1 class="font-bold text-lg leading-tight text-slate-900">KeuanganKu</h1>
+                    <p class="text-xs text-slate-500">Google Sheets Sync</p>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-2">
-                <!-- Status Sync Indicator -->
-                <button onclick="openApiModal()" id="syncStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition">
-                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span id="syncStatusText">Setup Sheets URL</span>
-                </button>
-
-                <!-- Setup Guide Button -->
-                <button onclick="openGuideModal()" class="p-2 text-slate-600 hover:text-emerald-600 hover:bg-slate-100 rounded-xl transition text-xs font-medium flex items-center gap-1.5" title="Panduan Apps Script">
-                    <i class="fa-solid fa-code text-base"></i>
-                    <span class="hidden sm:inline">Panduan Script</span>
+            <!-- Status & Action Buttons -->
+            <div class="flex items-center gap-3">
+                <span id="syncStatus" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Google Sheets Connected
+                </span>
+                <button onclick="fetchDataFromSheet()" class="p-2 text-slate-600 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition" title="Refresh Data">
+                    <i data-lucide="refresh-cw" class="w-5 h-5" id="refreshIcon"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Dashboard Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        <!-- Top Bar Filters & Actions -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-            <!-- Filter Period -->
-            <div class="flex items-center space-x-2 w-full sm:w-auto">
-                <i class="fa-regular fa-calendar-days text-slate-400"></i>
-                <span class="text-xs font-medium text-slate-500">Periode:</span>
-                <select id="filterMonth" class="bg-slate-100 border-none text-slate-700 font-semibold focus:ring-2 focus:ring-emerald-500 rounded-xl text-xs sm:text-sm py-1.5 px-3 cursor-pointer">
-                    <option value="0">Januari</option>
-                    <option value="1">Februari</option>
-                    <option value="2">Maret</option>
-                    <option value="3">April</option>
-                    <option value="4">Mei</option>
-                    <option value="5">Juni</option>
-                    <option value="6">Juli</option>
-                    <option value="7">Agustus</option>
-                    <option value="8">September</option>
-                    <option value="9">Oktober</option>
-                    <option value="10">November</option>
-                    <option value="11">Desember</option>
-                </select>
-                <select id="filterYear" class="bg-slate-100 border-none text-slate-700 font-semibold focus:ring-2 focus:ring-emerald-500 rounded-xl text-xs sm:text-sm py-1.5 px-3 cursor-pointer">
-                    <!-- Dynamic Years -->
-                </select>
+        <!-- Loading Overlay / Spinner -->
+        <div id="loadingState" class="hidden flex items-center justify-center gap-3 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200">
+            <i data-lucide="loader" class="w-5 h-5 animate-spin"></i>
+            <span class="text-sm font-medium">Menyinkronkan data dengan Google Sheets...</span>
+        </div>
+
+        <!-- Filter Period & Financial Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Filter Tanggal/Bulan -->
+            <div class="md:col-span-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-emerald-600"></i>
+                    <h2 class="font-semibold text-slate-700">Filter Periode</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="filterMonth" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 p-2.5 outline-none">
+                        <option value="ALL">Semua Bulan</option>
+                        <option value="0">Januari</option>
+                        <option value="1">Februari</option>
+                        <option value="2">Maret</option>
+                        <option value="3">April</option>
+                        <option value="4">Mei</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">Agustus</option>
+                        <option value="8">September</option>
+                        <option value="9">Oktober</option>
+                        <option value="10">November</option>
+                        <option value="11">Desember</option>
+                    </select>
+                    <select id="filterYear" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 p-2.5 outline-none">
+                        <!-- Filled dynamically by JS -->
+                    </select>
+                </div>
             </div>
 
-            <!-- Reload Data Button -->
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <button onclick="fetchFromGoogleSheets()" id="refreshBtn" class="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
-                    <i id="refreshIcon" class="fa-solid fa-rotate"></i> Refresh Data Sheets
-                </button>
+            <!-- Card Pemasukan -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-slate-500">Pemasukan</span>
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-emerald-600" id="totalIncome">Rp 0</h3>
+            </div>
+
+            <!-- Card Pengeluaran -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-slate-500">Pengeluaran</span>
+                    <div class="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                        <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-rose-600" id="totalExpense">Rp 0</h3>
+            </div>
+
+            <!-- Card Saldo -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-slate-500">Sisa Saldo</span>
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                        <i data-lucide="scale" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900" id="netBalance">Rp 0</h3>
+            </div>
+
+            <!-- Card Savings Rate / Status -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-slate-500">Rasio Tabungan</span>
+                    <div class="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                        <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-purple-600" id="savingsRate">0%</h3>
             </div>
         </div>
 
-        <!-- Banner Financial Summary Card -->
-        <div id="financialHealthCard" class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center transition-all">
-            <div class="space-y-1">
-                <span class="text-xs font-semibold uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-full text-white inline-block">Sisa Keuangan Periode Ini</span>
-                <h2 id="summaryBalance" class="text-2xl sm:text-3xl font-extrabold tracking-tight">Rp 0</h2>
-                <p id="healthDesc" class="text-xs text-emerald-100">Memuat status keuangan...</p>
+        <!-- Form Tambah Transaksi & Visualisasi Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Form Input Transaksi -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
+                    Tambah Transaksi
+                </h2>
+
+                <form id="transactionForm" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Transaksi</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="pemasukan" class="peer sr-only" checked>
+                                <div class="p-2.5 text-center rounded-xl border border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 font-medium text-sm transition">
+                                    Pemasukan
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="pengeluaran" class="peer sr-only">
+                                <div class="p-2.5 text-center rounded-xl border border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 peer-checked:text-rose-700 font-medium text-sm transition">
+                                    Pengeluaran
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                        <input type="date" id="inputDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+                        <select id="inputCategory" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <!-- Populated dynamically based on type -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Rp)</label>
+                        <input type="number" id="inputAmount" min="1" placeholder="Contoh: 50000" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan / Catatan</label>
+                        <input type="text" id="inputDescription" placeholder="Contoh: Gaji / Makan Siang" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition shadow-md shadow-emerald-200">
+                        Simpan Transaksi
+                    </button>
+                </form>
             </div>
-            <div class="mt-4 md:mt-0 flex gap-3 w-full md:w-auto">
-                <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 flex-1 md:flex-initial text-center md:text-left">
-                    <span class="text-[11px] text-emerald-100 block">Total Pemasukan</span>
-                    <span id="summaryIncome" class="text-lg font-bold text-white">Rp 0</span>
+
+            <!-- Visualisasi Charts -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 text-emerald-600"></i>
+                        Grafik Pengeluaran Kategori
+                    </h2>
                 </div>
-                <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 flex-1 md:flex-initial text-center md:text-left">
-                    <span class="text-[11px] text-emerald-100 block">Total Pengeluaran</span>
-                    <span id="summaryExpense" class="text-lg font-bold text-white">Rp 0</span>
+                <div class="h-64 relative flex items-center justify-center">
+                    <canvas id="categoryChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Main Form & Analytics Layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            <!-- Form Section (5 cols) -->
-            <div class="lg:col-span-5 space-y-6">
-                
-                <!-- Input Form -->
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
-                    <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-pen-to-square text-emerald-500"></i> Catat Transaksi Baru
-                    </h3>
-
-                    <form id="transactionForm" class="space-y-4">
-                        <!-- Type Selector (Radio Toggle) -->
-                        <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
-                            <button type="button" id="btnTypeExpense" onclick="setType('expense')" class="py-2 rounded-lg text-center transition-all bg-white text-rose-600 shadow-sm">
-                                <i class="fa-solid fa-arrow-up-right mr-1"></i> Pengeluaran
-                            </button>
-                            <button type="button" id="btnTypeIncome" onclick="setType('income')" class="py-2 rounded-lg text-center transition-all text-slate-600">
-                                <i class="fa-solid fa-arrow-down-left mr-1"></i> Pemasukan
-                            </button>
-                        </div>
-                        <input type="hidden" id="transType" value="expense">
-
-                        <!-- Amount -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah Uang (Rp)</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-medium text-xs">Rp</span>
-                                <input type="number" id="transAmount" required min="1" placeholder="0" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs transition">
-                            </div>
-                        </div>
-
-                        <!-- Date & Category Grid -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
-                                <input type="date" id="transDate" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs transition">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
-                                <select id="transCategory" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs transition">
-                                    <!-- Populated via JS -->
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Note -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan / Catatan</label>
-                            <input type="text" id="transNote" placeholder="Contoh: Beli Token Listrik / Gaji Bulanan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs transition">
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="submit" id="submitBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition text-xs flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i> Kirim Ke Google Sheets
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Charts Container -->
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-indigo-500"></i> Distribusi Pengeluaran
-                    </h3>
-                    <div class="relative h-48 flex items-center justify-center">
-                        <canvas id="pieChart"></canvas>
+        <!-- Tabel Riwayat Transaksi -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="list-ordered" class="w-5 h-5 text-emerald-600"></i>
+                    Riwayat Transaksi
+                </h2>
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                        <input type="text" id="searchQuery" placeholder="Cari keterangan..." class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                 </div>
-
             </div>
 
-            <!-- Transactions Table & History (7 cols) -->
-            <div class="lg:col-span-7 space-y-6">
-
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-table-list text-slate-600"></i> Transaksi Google Sheets
-                            </h3>
-                            <p class="text-[11px] text-slate-400">Data bersumber dari Spreadsheet Anda</p>
-                        </div>
-                        <span id="transactionCount" class="text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full w-max">
-                            0 Transaksi
-                        </span>
-                    </div>
-
-                    <!-- Filter & Search Controls -->
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        <div class="sm:col-span-7 relative">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                            <input type="text" id="searchInput" oninput="renderTransactions()" placeholder="Cari keterangan..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        </div>
-                        <div class="sm:col-span-5">
-                            <select id="categoryFilter" onchange="renderTransactions()" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                                <option value="ALL">Semua Kategori</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Transaction List Items -->
-                    <div id="transactionList" class="space-y-2.5 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
-                        <!-- Loaded dynamically -->
-                    </div>
-                </div>
-
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                            <th class="p-4">Tanggal</th>
+                            <th class="p-4">Tipe</th>
+                            <th class="p-4">Kategori</th>
+                            <th class="p-4">Keterangan</th>
+                            <th class="p-4 text-right">Jumlah</th>
+                            <th class="p-4 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody" class="divide-y divide-slate-100">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
             </div>
-
         </div>
 
     </main>
 
-    <!-- Modal 1: Config Apps Script API URL -->
-    <div id="apiModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-slate-100">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                    <i class="fa-solid fa-link text-emerald-500"></i> Pengaturan Web App URL
-                </h3>
-                <button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-xs text-slate-500 mb-4">
-                Masukkan URL Web Application Google Apps Script yang telah Anda *deploy* untuk menghubungkan spreadsheet Anda.
-            </p>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL</label>
-                    <input type="url" id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbx.../exec" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="closeApiModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Batal</button>
-                    <button onclick="saveApiUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md shadow-emerald-100">Simpan URL</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal 2: Google Apps Script Setup Code & Guide -->
-    <div id="guideModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-xl border border-slate-100 max-h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center mb-3 shrink-0">
-                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                    <i class="fa-brands fa-google text-emerald-500"></i> Panduan Google Apps Script Backend
-                </h3>
-                <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-
-            <div class="overflow-y-auto custom-scrollbar space-y-4 text-xs text-slate-600 pr-2">
-                <p>Ikuti 4 langkah mudah ini untuk menjadikan Google Sheets sebagai database Anda:</p>
-                
-                <ol class="list-decimal pl-4 space-y-2 text-slate-700 font-medium">
-                    <li>Buat **Google Sheet** baru, lalu beri nama sheet pertamanya: <code class="bg-slate-100 text-emerald-700 px-1.5 py-0.5 rounded border border-slate-200">Sheet1</code>.</li>
-                    <li>Buat header di baris ke-1: <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">ID</code>, <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">Tanggal</code>, <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">Tipe</code>, <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">Kategori</code>, <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">Jumlah</code>, <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">Keterangan</code>.</li>
-                    <li>Buka menu **Ekstensi > Apps Script**, lalu hapus semua kode bawaan dan tempel kode berikut:</li>
-                </ol>
-
-                <div class="relative">
-                    <button onclick="copyAppsScriptCode()" class="absolute top-2 right-2 bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition">
-                        <i class="fa-regular fa-copy"></i> Salin Kode
-                    </button>
-                    <pre id="scriptCodeBlock" class="bg-slate-900 text-slate-100 p-4 rounded-xl text-[11px] overflow-x-auto leading-relaxed font-mono">
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
-  var data = sheet.getDataRange().getValues();
-  var result = [];
-  
-  // Skip header (i = 1)
-  for (var i = 1; i < data.length; i++) {
-    result.push({
-      id: data[i][0],
-      date: formatDate(data[i][1]),
-      type: data[i][2],
-      category: data[i][3],
-      amount: data[i][4],
-      note: data[i][5]
-    });
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify({ status: "success", data: result }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
-    var postData = JSON.parse(e.postData.contents);
-    
-    sheet.appendRow([
-      postData.id || Date.now().toString(),
-      postData.date,
-      postData.type,
-      postData.category,
-      postData.amount,
-      postData.note || ""
-    ]);
-    
-    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function formatDate(d) {
-  if (!d) return "";
-  if (d instanceof Date) {
-    var year = d.getFullYear();
-    var month = ("0" + (d.getMonth() + 1)).slice(-2);
-    var day = ("0" + d.getDate()).slice(-2);
-    return year + "-" + month + "-" + day;
-  }
-  return d.toString();
-}</pre>
-                </div>
-
-                <ol start="4" class="list-decimal pl-4 space-y-2 text-slate-700 font-medium">
-                    <li>Klik **Deploy > Deployment Baru**, pilih tipe **Aplikasi Web**:
-                        <ul class="list-disc pl-4 mt-1 font-normal text-xs text-slate-600">
-                            <li>Jalankan sebagai: **Saya**</li>
-                            <li>Yang memiliki akses: **Siapa saja** (*Anyone*)</li>
-                        </ul>
-                    </li>
-                    <li>Klik **Deploy**, izinkan akses (*Grant Permission*), lalu salin **Web App URL** dan tempel di tombol **Setup Sheets URL** aplikasi ini.</li>
-                </ol>
-            </div>
-
-            <div class="pt-3 border-t border-slate-100 flex justify-end shrink-0">
-                <button onclick="closeGuideModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl">Mengerti & Tutup</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal 3: Custom Alert Notification -->
-    <div id="noticeModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-2xl p-5 max-w-xs w-full mx-4 shadow-xl border border-slate-100 text-center">
-            <div id="noticeIcon" class="w-10 h-10 rounded-full mx-auto flex items-center justify-center mb-3"></div>
-            <h4 id="noticeTitle" class="font-bold text-slate-800 text-sm mb-1"></h4>
-            <p id="noticeDesc" class="text-xs text-slate-500 mb-4"></p>
-            <button onclick="closeNoticeModal()" class="w-full py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">Tutup</button>
-        </div>
-    </div>
-
-    <!-- Application Script Logic -->
+    <!-- Script Application Logic -->
     <script>
+        // HARDCODED GOOGLE APPS SCRIPT URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw63aMxflzMUHZo2YlJEtiRvOXi3OZWqkkOexJ73mGGGW_Wfh7xHoSeznK0onVkKhdmXw/exec';
+
+        // Kategori Default
         const CATEGORIES = {
-            expense: [
-                { id: 'Makanan', label: 'Makanan & Minuman', icon: 'fa-utensils', color: '#f43f5e' },
-                { id: 'Transportasi', label: 'Transportasi', icon: 'fa-car', color: '#3b82f6' },
-                { id: 'Belanja', label: 'Belanja / Kebutuhan', icon: 'fa-bag-shopping', color: '#ec4899' },
-                { id: 'Tagihan', label: 'Tagihan & Listrik', icon: 'fa-file-invoice-dollar', color: '#eab308' },
-                { id: 'Hiburan', label: 'Hiburan & Recreasi', icon: 'fa-gamepad', color: '#8b5cf6' },
-                { id: 'Kesehatan', label: 'Kesehatan', icon: 'fa-notes-medical', color: '#06b6d4' },
-                { id: 'Lainnya_Exp', label: 'Lain-lain', icon: 'fa-ellipsis', color: '#64748b' }
-            ],
-            income: [
-                { id: 'Gaji', label: 'Gaji / Utama', icon: 'fa-money-bill-wave', color: '#10b981' },
-                { id: 'Uang Saku', label: 'Uang Saku / Ortusa', icon: 'fa-hand-holding-dollar', color: '#059669' },
-                { id: 'Bonus', label: 'Bonus / Freelance', icon: 'fa-gift', color: '#047857' },
-                { id: 'Investasi', label: 'Investasi', icon: 'fa-chart-line', color: '#0f766e' },
-                { id: 'Lainnya_Inc', label: 'Pemasukan Lainnya', icon: 'fa-wallet', color: '#334155' }
-            ]
+            pemasukan: ['Gaji', 'Bonus', 'Investasi', 'Hadiah', 'Lainnya'],
+            pengeluaran: ['Makanan & Minuman', 'Transportasi', 'Belanja', 'Tagihan & Utilitas', 'Hiburan', 'Kesehatan', 'Pendidikan', 'Lainnya']
         };
 
-        // Application Global States
-        let transactions = JSON.parse(localStorage.getItem('sheets_local_cache')) || [];
-        let googleScriptUrl = localStorage.getItem('google_script_app_url') || '';
-        let pieChartInstance = null;
+        // Application State
+        let transactions = [];
+        let categoryChartInstance = null;
 
-        window.onload = function() {
-            initYearFilter();
-            setCurrentPeriod();
-            setupFormCategories('expense');
-            setupFilterCategories();
+        // Initialize Lucide Icons
+        lucide.createIcons();
 
-            document.getElementById('filterMonth').addEventListener('change', updateApp);
-            document.getElementById('filterYear').addEventListener('change', updateApp);
-            document.getElementById('transactionForm').addEventListener('submit', handleFormSubmit);
+        // DOM Elements
+        const transactionForm = document.getElementById('transactionForm');
+        const inputDate = document.getElementById('inputDate');
+        const inputCategory = document.getElementById('inputCategory');
+        const inputAmount = document.getElementById('inputAmount');
+        const inputDescription = document.getElementById('inputDescription');
+        const filterMonth = document.getElementById('filterMonth');
+        const filterYear = document.getElementById('filterYear');
+        const searchQuery = document.getElementById('searchQuery');
+        const loadingState = document.getElementById('loadingState');
 
-            document.getElementById('transDate').value = new Date().toISOString().split('T')[0];
+        // Initial Setup
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default date to today
+            inputDate.value = new Date().toISOString().split('T')[0];
 
-            if (googleScriptUrl) {
-                document.getElementById('apiUrlInput').value = googleScriptUrl;
-                updateSyncBadge('online', 'Sheets Connected');
-                fetchFromGoogleSheets();
-            } else {
-                updateSyncBadge('offline', 'Setup Sheets URL');
-                updateApp();
-            }
-        };
+            // Initialize Year Filter options
+            setupYearFilter();
 
-        function formatRupiah(number) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                maximumFractionDigits: 0
-            }).format(number);
-        }
+            // Event Listeners
+            document.querySelectorAll('input[name="type"]').forEach(radio => {
+                radio.addEventListener('change', updateCategoryDropdown);
+            });
 
-        function initYearFilter() {
-            const yearSelect = document.getElementById('filterYear');
+            filterMonth.addEventListener('change', renderDashboard);
+            filterYear.addEventListener('change', renderDashboard);
+            searchQuery.addEventListener('input', renderDashboard);
+
+            transactionForm.addEventListener('submit', handleAddTransaction);
+
+            updateCategoryDropdown();
+            fetchDataFromSheet();
+        });
+
+        function setupYearFilter() {
             const currentYear = new Date().getFullYear();
-            yearSelect.innerHTML = '';
+            filterYear.innerHTML = `<option value="ALL">Semua Tahun</option>`;
             for (let y = currentYear - 2; y <= currentYear + 2; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
                 if (y === currentYear) opt.selected = true;
-                yearSelect.appendChild(opt);
+                filterYear.appendChild(opt);
             }
         }
 
-        function setCurrentPeriod() {
-            const now = new Date();
-            document.getElementById('filterMonth').value = now.getMonth();
-            document.getElementById('filterYear').value = now.getFullYear();
-        }
-
-        function setType(type) {
-            document.getElementById('transType').value = type;
-            const btnExp = document.getElementById('btnTypeExpense');
-            const btnInc = document.getElementById('btnTypeIncome');
-
-            if (type === 'expense') {
-                btnExp.className = "py-2 rounded-lg text-center transition-all bg-white text-rose-600 shadow-sm font-semibold";
-                btnInc.className = "py-2 rounded-lg text-center transition-all text-slate-600 font-normal";
-            } else {
-                btnInc.className = "py-2 rounded-lg text-center transition-all bg-white text-emerald-600 shadow-sm font-semibold";
-                btnExp.className = "py-2 rounded-lg text-center transition-all text-slate-600 font-normal";
-            }
-            setupFormCategories(type);
-        }
-
-        function setupFormCategories(type) {
-            const catSelect = document.getElementById('transCategory');
-            catSelect.innerHTML = '';
-            CATEGORIES[type].forEach(cat => {
+        function updateCategoryDropdown() {
+            const selectedType = document.querySelector('input[name="type"]:checked').value;
+            inputCategory.innerHTML = '';
+            CATEGORIES[selectedType].forEach(cat => {
                 const opt = document.createElement('option');
-                opt.value = cat.id;
-                opt.textContent = cat.label;
-                catSelect.appendChild(opt);
+                opt.value = cat;
+                opt.textContent = cat;
+                inputCategory.appendChild(opt);
             });
         }
 
-        function setupFilterCategories() {
-            const filterCat = document.getElementById('categoryFilter');
-            filterCat.innerHTML = '<option value="ALL">Semua Kategori</option>';
-            [...CATEGORIES.expense, ...CATEGORIES.income].forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat.id;
-                opt.textContent = cat.label;
-                filterCat.appendChild(opt);
-            });
-        }
-
-        function updateSyncBadge(status, text) {
-            const badge = document.getElementById('syncStatusBadge');
-            const txt = document.getElementById('syncStatusText');
-            txt.innerText = text;
-
-            if (status === 'online') {
-                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer";
-                badge.querySelector('span').className = "w-2 h-2 rounded-full bg-emerald-500";
-            } else if (status === 'syncing') {
-                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 cursor-wait";
-                badge.querySelector('span').className = "w-2 h-2 rounded-full bg-indigo-500 animate-ping";
-            } else {
-                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition cursor-pointer";
-                badge.querySelector('span').className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
-            }
-        }
-
-        // --- Fetch Data from Google Sheets API ---
-        async function fetchFromGoogleSheets() {
-            if (!googleScriptUrl) {
-                openApiModal();
-                return;
-            }
-
-            const refreshIcon = document.getElementById('refreshIcon');
-            refreshIcon.classList.add('fa-spin');
-            updateSyncBadge('syncing', 'Syncing Sheets...');
-
+        // Fetch Data from Google Sheets API
+        async function fetchDataFromSheet() {
+            showLoading(true);
             try {
-                const response = await fetch(googleScriptUrl);
-                const resData = await response.json();
-
-                if (resData.status === 'success' && Array.isArray(resData.data)) {
-                    transactions = resData.data;
-                    localStorage.setItem('sheets_local_cache', JSON.stringify(transactions));
-                    updateSyncBadge('online', 'Sheets Connected');
+                const response = await fetch(SCRIPT_URL);
+                const result = await response.json();
+                if (result.status === 'success') {
+                    transactions = result.data.map(item => ({
+                        id: item.id || Date.now().toString(),
+                        tanggal: item.tanggal,
+                        tipe: item.tipe,
+                        kategori: item.kategori,
+                        jumlah: parseFloat(item.jumlah) || 0,
+                        keterangan: item.keterangan || ''
+                    }));
+                    renderDashboard();
                 } else {
-                    showNotice('Error', 'Format data dari Apps Script tidak sesuai.', 'error');
-                    updateSyncBadge('offline', 'Error Syncing');
+                    alert('Gagal mengambil data dari Google Sheets');
                 }
             } catch (err) {
-                console.error("Fetch Error:", err);
-                showNotice('Gagal Sync', 'Gagal terhubung ke Google Sheets API. Menggunakan data cache lokal.', 'error');
-                updateSyncBadge('offline', 'Offline Cache');
+                console.error(err);
+                alert('Terjadi kesalahan koneksi saat membaca Google Sheets.');
             } finally {
-                refreshIcon.classList.remove('fa-spin');
-                updateApp();
+                showLoading(false);
             }
         }
 
-        // --- Post Data to Google Sheets API ---
-        async function handleFormSubmit(e) {
+        // Sync Data to Google Sheets API
+        async function syncDataToSheet() {
+            showLoading(true);
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'sync',
+                        data: transactions
+                    })
+                });
+                renderDashboard();
+            } catch (err) {
+                console.error(err);
+                alert('Gagal menyinkronkan data ke Google Sheets.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Handle Add Transaction
+        function handleAddTransaction(e) {
             e.preventDefault();
 
-            const submitBtn = document.getElementById('submitBtn');
-            const originalBtnHtml = submitBtn.innerHTML;
-
-            const payload = {
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const newTransaction = {
                 id: Date.now().toString(),
-                type: document.getElementById('transType').value,
-                amount: parseFloat(document.getElementById('transAmount').value),
-                date: document.getElementById('transDate').value,
-                category: document.getElementById('transCategory').value,
-                note: document.getElementById('transNote').value.trim()
+                tanggal: inputDate.value,
+                tipe: type,
+                kategori: inputCategory.value,
+                jumlah: parseFloat(inputAmount.value),
+                keterangan: inputDescription.value
             };
 
-            // Immediate local UI update
-            transactions.push(payload);
-            localStorage.setItem('sheets_local_cache', JSON.stringify(transactions));
-            updateApp();
+            transactions.unshift(newTransaction);
+            syncDataToSheet();
 
-            // Reset form
-            document.getElementById('transAmount').value = '';
-            document.getElementById('transNote').value = '';
+            // Reset Form
+            inputAmount.value = '';
+            inputDescription.value = '';
+        }
 
-            // If Google Sheets endpoint exists, POST remotely
-            if (googleScriptUrl) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan ke Sheets...';
-
-                try {
-                    // Send JSON to Apps Script
-                    await fetch(googleScriptUrl, {
-                        method: 'POST',
-                        mode: 'no-cors', // Standard Apps Script CORS Handling
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    showNotice('Berhasil', 'Transaksi telah dikirim dan disimpan ke Google Sheets Anda!', 'success');
-                } catch (error) {
-                    console.error("Post Error:", error);
-                    showNotice('Perhatian', 'Gagal terhubung ke Sheets. Transaksi hanya disimpan di browser.', 'warning');
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHtml;
-                }
-            } else {
-                showNotice('Saved Offline', 'Transaksi disimpan lokal. Masukkan URL Apps Script untuk sinkronisasi otomatis.', 'warning');
+        // Delete Transaction
+        function deleteTransaction(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                syncDataToSheet();
             }
         }
 
-        function updateApp() {
-            renderSummary();
-            renderTransactions();
-            renderCharts();
+        // Helper Format Currency
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(amount);
         }
 
-        function getFilteredTransactions() {
-            const m = parseInt(document.getElementById('filterMonth').value);
-            const y = parseInt(document.getElementById('filterYear').value);
+        // Render Dashboard UI
+        function renderDashboard() {
+            const selectedMonth = filterMonth.value;
+            const selectedYear = filterYear.value;
+            const query = searchQuery.value.toLowerCase();
 
-            return transactions.filter(t => {
-                if (!t.date) return false;
-                const d = new Date(t.date);
-                return d.getMonth() === m && d.getFullYear() === y;
+            // Filter Transactions
+            const filtered = transactions.filter(t => {
+                const dateObj = new Date(t.tanggal);
+                const matchMonth = selectedMonth === 'ALL' || dateObj.getMonth().toString() === selectedMonth;
+                const matchYear = selectedYear === 'ALL' || dateObj.getFullYear().toString() === selectedYear;
+                const matchQuery = t.keterangan.toLowerCase().includes(query) || t.kategori.toLowerCase().includes(query);
+                return matchMonth && matchYear && matchQuery;
             });
-        }
 
-        function renderSummary() {
-            const filtered = getFilteredTransactions();
-
-            let totalIncome = 0;
-            let totalExpense = 0;
+            // Calculate Totals
+            let income = 0;
+            let expense = 0;
+            const categoryExpenses = {};
 
             filtered.forEach(t => {
-                if (t.type === 'income') totalIncome += Number(t.amount || 0);
-                else totalExpense += Number(t.amount || 0);
+                if (t.tipe === 'pemasukan') {
+                    income += t.jumlah;
+                } else {
+                    expense += t.jumlah;
+                    categoryExpenses[t.kategori] = (categoryExpenses[t.kategori] || 0) + t.jumlah;
+                }
             });
 
-            const balance = totalIncome - totalExpense;
+            const balance = income - expense;
+            const savingsRate = income > 0 ? Math.max(0, Math.round((balance / income) * 100)) : 0;
 
-            document.getElementById('summaryIncome').innerText = formatRupiah(totalIncome);
-            document.getElementById('summaryExpense').innerText = formatRupiah(totalExpense);
-            document.getElementById('summaryBalance').innerText = formatRupiah(balance);
+            // Render Cards
+            document.getElementById('totalIncome').textContent = formatRupiah(income);
+            document.getElementById('totalExpense').textContent = formatRupiah(expense);
+            document.getElementById('netBalance').textContent = formatRupiah(balance);
+            document.getElementById('savingsRate').textContent = `${savingsRate}%`;
 
-            const desc = document.getElementById('healthDesc');
-            if (balance < 0) {
-                desc.innerText = "⚠️ Total pengeluaran melebihi pemasukan bulan ini.";
-            } else if (totalIncome === 0 && totalExpense === 0) {
-                desc.innerText = "Belum ada catatan transaksi pada bulan ini.";
+            // Render Table
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-slate-400">Tidak ada transaksi ditemukan</td>
+                    </tr>
+                `;
             } else {
-                desc.innerText = "Sisa anggaran positif untuk periode bulan ini.";
+                filtered.forEach(t => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="p-4 text-slate-600">${t.tanggal}</td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 text-xs font-semibold rounded-full ${t.tipe === 'pemasukan' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${t.tipe}
+                            </span>
+                        </td>
+                        <td class="p-4 text-slate-700 font-medium">${t.kategori}</td>
+                        <td class="p-4 text-slate-600">${t.keterangan}</td>
+                        <td class="p-4 text-right font-bold ${t.tipe === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${t.tipe === 'pemasukan' ? '+' : '-'} ${formatRupiah(t.jumlah)}
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="deleteTransaction('${t.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Hapus">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
             }
+
+            // Render Chart
+            renderCategoryChart(categoryExpenses);
         }
 
-        function renderTransactions() {
-            const listEl = document.getElementById('transactionList');
-            const countEl = document.getElementById('transactionCount');
-            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
-            const categoryFilter = document.getElementById('categoryFilter').value;
+        // Render Category Breakdown Chart
+        function renderCategoryChart(categoryData) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
 
-            let items = getFilteredTransactions();
-
-            if (searchKeyword) {
-                items = items.filter(i => (i.note || '').toLowerCase().includes(searchKeyword));
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
             }
 
-            if (categoryFilter !== 'ALL') {
-                items = items.filter(i => i.category === categoryFilter);
-            }
+            const labels = Object.keys(categoryData);
+            const data = Object.values(categoryData);
 
-            items.sort((a, b) => new Date(b.date) - new Date(a.date));
-            countEl.innerText = `${items.length} Transaksi`;
-
-            if (items.length === 0) {
-                listEl.innerHTML = `
-                    <div class="text-center py-8 text-slate-400">
-                        <i class="fa-regular fa-folder-open text-2xl mb-2"></i>
-                        <p class="text-xs">Tidak ada data transaksi ditemukan.</p>
-                    </div>
-                `;
+            if (labels.length === 0) {
+                categoryChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Tidak Ada Data'],
+                        datasets: [{ data: [1], backgroundColor: ['#e2e8f0'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
                 return;
             }
 
-            const allCats = [...CATEGORIES.expense, ...CATEGORIES.income];
-
-            listEl.innerHTML = items.map(item => {
-                const catObj = allCats.find(c => c.id === item.category) || { label: item.category, icon: 'fa-tag', color: '#64748b' };
-                const isInc = item.type === 'income';
-
-                return `
-                    <div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition flex items-center justify-between border border-slate-100">
-                        <div class="flex items-center space-x-3 overflow-hidden">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm" style="background-color: ${catObj.color}">
-                                <i class="fa-solid ${catObj.icon} text-xs"></i>
-                            </div>
-                            <div class="truncate">
-                                <h4 class="font-semibold text-slate-800 text-xs truncate">${item.note || catObj.label}</h4>
-                                <p class="text-[10px] text-slate-400">
-                                    <span>${catObj.label}</span> • <span>${item.date}</span>
-                                </p>
-                            </div>
-                        </div>
-                        <span class="font-bold text-xs ${isInc ? 'text-emerald-600' : 'text-rose-600'} shrink-0 ml-2">
-                            ${isInc ? '+' : '-'} ${formatRupiah(item.amount)}
-                        </span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderCharts() {
-            const filtered = getFilteredTransactions();
-            const categorySums = {};
-
-            filtered.forEach(t => {
-                if (t.type === 'expense') {
-                    categorySums[t.category] = (categorySums[t.category] || 0) + Number(t.amount || 0);
+            categoryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
                 }
             });
+        }
 
-            const ctxPie = document.getElementById('pieChart').getContext('2d');
-            if (pieChartInstance) pieChartInstance.destroy();
-
-            const labels = [];
-            const dataValues = [];
-            const colors = [];
-
-            Object.keys(categorySums).forEach(catId => {
-                const catObj = CATEGORIES.expense.find(c => c.id === catId) || { label: catId, color: '#64748b' };
-                labels.push(catObj.label);
-                dataValues.push(categorySums[catId]);
-                colors.push(catObj.color);
-            });
-
-            if (dataValues.length === 0) {
-                pieChartInstance = new Chart(ctxPie, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Kosong'],
-                        datasets: [{ data: [1], backgroundColor: ['#f1f5f9'] }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                });
+        function showLoading(isLoading) {
+            if (isLoading) {
+                loadingState.classList.remove('hidden');
             } else {
-                pieChartInstance = new Chart(ctxPie, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{ data: dataValues, backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff' }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => ` ${context.label}: ${formatRupiah(context.raw)}`
-                                }
-                            }
-                        }
-                    }
-                });
+                loadingState.classList.add('hidden');
             }
         }
-
-        // --- Modals Logic ---
-        function openApiModal() { document.getElementById('apiModal').classList.remove('hidden'); }
-        function closeApiModal() { document.getElementById('apiModal').classList.add('hidden'); }
-        function openGuideModal() { document.getElementById('guideModal').classList.remove('hidden'); }
-        function closeGuideModal() { document.getElementById('guideModal').classList.add('hidden'); }
-
-        function saveApiUrl() {
-            const url = document.getElementById('apiUrlInput').value.trim();
-            if (url) {
-                googleScriptUrl = url;
-                localStorage.setItem('google_script_app_url', url);
-                closeApiModal();
-                fetchFromGoogleSheets();
-            } else {
-                googleScriptUrl = '';
-                localStorage.removeItem('google_script_app_url');
-                updateSyncBadge('offline', 'Setup Sheets URL');
-                closeApiModal();
-            }
-        }
-
-        function copyAppsScriptCode() {
-            const code = document.getElementById('scriptCodeBlock').innerText;
-            const tempInput = document.createElement('textarea');
-            tempInput.value = code;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            showNotice('Berhasil', 'Kode Apps Script berhasil disalin ke clipboard!', 'success');
-        }
-
-        function showNotice(title, desc, type) {
-            const modal = document.getElementById('noticeModal');
-            const icon = document.getElementById('noticeIcon');
-            document.getElementById('noticeTitle').innerText = title;
-            document.getElementById('noticeDesc').innerText = desc;
-
-            if (type === 'success') {
-                icon.className = "w-10 h-10 rounded-full mx-auto flex items-center justify-center mb-3 bg-emerald-100 text-emerald-600";
-                icon.innerHTML = '<i class="fa-solid fa-check text-lg"></i>';
-            } else if (type === 'warning') {
-                icon.className = "w-10 h-10 rounded-full mx-auto flex items-center justify-center mb-3 bg-amber-100 text-amber-600";
-                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-lg"></i>';
-            } else {
-                icon.className = "w-10 h-10 rounded-full mx-auto flex items-center justify-center mb-3 bg-rose-100 text-rose-600";
-                icon.innerHTML = '<i class="fa-solid fa-xmark text-lg"></i>';
-            }
-
-            modal.classList.remove('hidden');
-        }
-
-        function closeNoticeModal() { document.getElementById('noticeModal').classList.add('hidden'); }
     </script>
 </body>
 </html>
